@@ -4,31 +4,35 @@ import com.conversor.dto.TranscriptResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
-// NOTA: Os imports não usados aqui (WebClient) são mantidos, mas a lógica real está comentada.
-
 @Service
 public class TranscriptionService {
 
-    // Mantenha a injeção, mas não a use.
+    // Endpoint do Microserviço Python
+    private static final String PYTHON_API_URL = "http://localhost:5000/api/transcribe";
     private final WebClient webClient;
 
     public TranscriptionService(WebClient.Builder webClientBuilder) {
-        // Inicializa o WebClient, mas ele não será usado nesta versão de teste
-        this.webClient = webClientBuilder.build();
+        // Inicializa o WebClient
+        this.webClient = webClientBuilder.baseUrl(PYTHON_API_URL).build();
     }
 
     /**
-     * MOCK ATIVO: Retorna um texto de transcrição simulado para que o serviço de IA
-     * possa ser testado, contornando a falha de acesso do YouTube.
+     * FUNÇÃO REAL: Chama o microserviço Python para obter a transcrição.
      */
     public TranscriptResponse getTranscription(String youtubeUrl) {
-        System.out.println("⚠️ MOCK ATIVO: Retornando texto de teste para a URL: " + youtubeUrl);
+        System.out.println("✅ MOCK DESATIVADO: Tentando obter transcrição real para a URL: " + youtubeUrl);
 
-        // Texto Mock de qualidade para a IA processar
-        TranscriptResponse mockResponse = new TranscriptResponse();
-        mockResponse.setVideoId("MOCK_ID");
-        mockResponse.setTranscript("O desenvolvimento ágil é essencial para startups. Ele se concentra na entrega rápida de software funcional e na colaboração com o cliente. Diferente dos métodos tradicionais, o ágil permite mudanças de requisitos de forma mais fácil. Scrum e Kanban são frameworks populares do desenvolvimento ágil.");
-
-        return mockResponse;
+        try {
+            return webClient.get()
+                    .uri(uriBuilder -> uriBuilder.queryParam("url", youtubeUrl).build())
+                    .retrieve()
+                    .bodyToMono(TranscriptResponse.class)
+                    .block();
+        } catch (Exception e) {
+            // Captura e relança erros de comunicação, como 404 do Python
+            System.err.println("Erro ao obter transcrição do serviço Python: " + e.getMessage());
+            // Mapeia o erro para a camada de controle/frontend
+            throw new RuntimeException("Falha na transcrição do vídeo. O serviço Python pode estar offline ou o vídeo não tem legendas disponíveis.", e);
+        }
     }
 }
