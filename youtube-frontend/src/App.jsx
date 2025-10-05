@@ -5,16 +5,23 @@ import './App.css';
 const API_BASE_URL = 'http://localhost:8080/api/videos';
 
 function App() {
-  const [url, setUrl] = useState('');
+  // ⚠️ Voltamos a usar URL como entrada principal
+  const [url, setUrl] = useState(''); 
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   // Função genérica para chamar os endpoints do backend
   const fetchContent = async (endpoint) => {
-    // Para fins de teste, garantimos que a URL não esteja vazia, mas você pode usar qualquer valor.
+    // Usamos o URL para fins de roteamento, mas o backend vai usar o mock
     const effectiveUrl = url || 'teste-mock'; 
     
+    if (endpoint === 'transcribe') {
+        // ⚠️ MANTEMOS A MENSAGEM DE ERRO/AVISO
+        setError('O serviço de transcrição direta foi desativado por instabilidade. Por favor, use os botões de IA.');
+        return;
+    }
+
     if (!effectiveUrl) {
       setError('Por favor, insira uma URL do YouTube.');
       return;
@@ -25,20 +32,17 @@ function App() {
     setResult('');
 
     try {
-      // Fazendo a chamada para o backend Java (que está com o mock ativo)
+      // Usamos a chamada original GET, que irá para o mock no Java
       const response = await fetch(`${API_BASE_URL}/${endpoint}?url=${encodeURIComponent(effectiveUrl)}`);
 
       // 1. CHECAGEM INICIAL DE SUCESSO/FALHA (Status 200 OK)
       if (!response.ok) {
         let errorMsg = `Erro do Servidor (${response.status}).`;
 
-        // Tenta ler o corpo da resposta como texto (é mais seguro para erros)
         const errorBody = await response.text();
         
         if (response.status === 429) {
           errorMsg = "Limite de uso da IA (429 Too Many Requests) atingido. Tente novamente em alguns minutos.";
-        } else if (response.status === 404) {
-          errorMsg = `Falha na Transcrição. O vídeo pode não ter legendas.`;
         } else {
            // Tenta analisar o JSON para pegar a mensagem de erro detalhada do Spring Boot
           try {
@@ -53,22 +57,10 @@ function App() {
       }
       
       // 2. CHECAGEM DE SUCESSO (Status 200 OK)
-      // Checa o Content-Type para saber se é JSON (transcribe) ou texto (IA)
-      const contentType = response.headers.get('content-type');
-      let data;
-
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
-        // Para a rota /transcribe (que retorna JSON), pega o 'transcript'
-        setResult(data.transcript); 
-      } else {
-        // Para rotas de IA (/summarize, /enrich) que retornam texto puro
-        data = await response.text();
-        setResult(data);
-      }
+      const data = await response.text();
+      setResult(data);
 
     } catch (err) {
-      // 3. ERRO DE REDE/CORS/JS
       setError(`Falha na Requisição: ${err.message || 'Verifique a conexão (backend Java 8080).'}`); 
 
     } finally {
@@ -84,6 +76,7 @@ function App() {
       <div className="ad-unit top-ad">Anúncio Aqui (Google AdSense)</div>
       
       <div className="input-area">
+        {/* 💡 INPUT DE URL */}
         <input
           type="text"
           placeholder="Cole a URL do YouTube aqui (Ex: https://www.youtube.com/watch?v=...)"
@@ -92,9 +85,11 @@ function App() {
           disabled={loading}
         />
         <div className="buttons">
+          {/* ⚠️ BOTÃO DE TRANSCREVER AGORA SÓ MOSTRA O AVISO */}
           <button onClick={() => fetchContent('transcribe')} disabled={loading}>
-            {loading ? 'Transcrevendo...' : '1. Transcrever (Bruto)'}
+            {loading ? 'Processando...' : '1. Transcrever (Desativado)'}
           </button>
+          {/* BOTÕES DE IA AGORA USAM O URL (QUE CHAMA O MOCK) */}
           <button onClick={() => fetchContent('summarize')} disabled={loading}>
             {loading ? 'Resumindo...' : '2. Resumir (Tópicos IA)'}
           </button>

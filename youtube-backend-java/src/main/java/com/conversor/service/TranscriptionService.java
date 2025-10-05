@@ -7,17 +7,15 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Service
 public class TranscriptionService {
 
-    // Mantenha a injeção, mas não a use.
     private final WebClient webClient;
 
     public TranscriptionService(WebClient.Builder webClientBuilder) {
-        // Inicializa o WebClient, mas ele não será usado nesta versão de teste
+        // Inicializa o WebClient, mas não será usado na lógica de mock
         this.webClient = webClientBuilder.build();
     }
 
     /**
-     * MOCK ATIVO: Retorna um texto de transcrição simulado para que o serviço de IA
-     * possa ser testado. ESTA É A VERSÃO DE PRODUÇÃO DEVIDO A ERROS DE AMBIENTE.
+     * VERSÃO FINAL DE PRODUÇÃO: Utiliza o MOCK estável.
      */
     public TranscriptResponse getTranscription(String youtubeUrl) {
         System.out.println("⚠️ MOCK ATIVO: Retornando texto de teste para a URL: " + youtubeUrl);

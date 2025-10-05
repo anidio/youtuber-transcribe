@@ -2,50 +2,48 @@ package com.conversor.controller;
 
 import com.conversor.dto.TranscriptResponse;
 import com.conversor.service.TranscriptionService;
-// ⚠️ ATUALIZAÇÃO: Importa o GeminiService
 import com.conversor.service.GeminiService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/videos")
+// Mantenha o CORS para a porta do frontend
 @CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5174", "http://localhost:5173"})
 public class TranscriptionController {
 
+    // Mantemos a injeção, mas só Gemini será usado diretamente
     private final TranscriptionService transcriptionService;
-    private final GeminiService geminiService; // ⚠️ NOVO SERVIÇO DE IA
+    private final GeminiService geminiService;
 
-    // Construtor atualizado para injetar GeminiService
     public TranscriptionController(TranscriptionService transcriptionService, GeminiService geminiService) {
         this.transcriptionService = transcriptionService;
         this.geminiService = geminiService;
     }
 
-    // Endpoint 1: Transcrição Bruta
+    // ⚠️ O Endpoint /transcribe é mantido, mas não será usado pelo novo frontend.
     @GetMapping("/transcribe")
     public TranscriptResponse transcribe(@RequestParam String url) {
-        if (url == null || url.trim().isEmpty()) {
-            throw new IllegalArgumentException("A URL do YouTube é obrigatória.");
-        }
+        // Devolve o mock para testar a conexão, mas o frontend será instruído a não usá-lo.
         return transcriptionService.getTranscription(url);
     }
 
-    // Endpoint 2: Resumir o Vídeo
-    @GetMapping("/summarize")
-    public String summarize(@RequestParam String url) {
-        // 1. Obtém a transcrição (MOCK ATIVO)
-        String transcript = transcriptionService.getTranscription(url).getTranscript();
-
-        // 2. Chama a IA do Gemini para resumir
+    // 💡 FLUXO TACTIQ: Recebe o texto BRUTO no corpo da requisição (POST)
+    @PostMapping("/summarize")
+    public String summarize(@RequestBody String transcript) {
+        if (transcript == null || transcript.trim().isEmpty()) {
+            throw new IllegalArgumentException("O texto da transcrição é obrigatório. Cole a transcrição no campo de texto.");
+        }
+        // Chama a IA do Gemini diretamente
         return geminiService.summarize(transcript);
     }
 
-    // Endpoint 3: Incrementar Conteúdo
-    @GetMapping("/enrich")
-    public String enrich(@RequestParam String url) {
-        // 1. Obtém a transcrição (MOCK ATIVO)
-        String transcript = transcriptionService.getTranscription(url).getTranscript();
-
-        // 2. Chama a IA do Gemini para enriquecer
+    // 💡 FLUXO TACTIQ: Recebe o texto BRUTO no corpo da requisição (POST)
+    @PostMapping("/enrich")
+    public String enrich(@RequestBody String transcript) {
+        if (transcript == null || transcript.trim().isEmpty()) {
+            throw new IllegalArgumentException("O texto da transcrição é obrigatório. Cole a transcrição no campo de texto.");
+        }
+        // Chama a IA do Gemini diretamente
         return geminiService.enrich(transcript);
     }
 }
