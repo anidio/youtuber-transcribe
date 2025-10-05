@@ -1,0 +1,216 @@
+/* Correção Universal do Box Model - Essencial para Responsividade */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* Variáveis de cores Ciberpunk */
+:root {
+  --color-primary: #ff005c; /* Pink Neon */
+  --color-secondary: #8a2be2; /* Blue-Violet (Roxo) */
+  --color-text: #e0ffff; /* Ciano claro */
+  --color-bg: #1a1a2e; /* Azul Marinho Escuro */
+  --color-bg-dark: #0f0f18;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  margin: 0;
+  padding: 0;
+  font-family: 'Arial', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  /* Garante que o corpo não crie overflow horizontalmente */
+  overflow-x: hidden; 
+}
+
+.container {
+  /* Estilo base (desktop) */
+  max-width: 1000px; /* Aumenta o limite máximo para telas grandes */
+  width: 90%; /* Ocupa 90% da largura no desktop */
+  padding: 40px; 
+  margin: 50px auto; /* Centraliza no desktop */
+  background: var(--color-bg-dark);
+  border-radius: 15px;
+  box-shadow: 0 0 40px rgba(138, 43, 226, 0.5);
+  text-align: center;
+  transition: all 0.3s ease-in-out;
+}
+
+h1 {
+  color: var(--color-primary);
+  text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
+  font-size: 3em; 
+  margin-bottom: 20px;
+  padding-top: 20px;
+}
+
+h1 .brain {
+  font-size: 1em;
+  display: inline-block;
+  animation: pulse 1.5s infinite alternate;
+}
+
+@keyframes pulse {
+  from { transform: scale(1); opacity: 0.8; }
+  to { transform: scale(1.05); opacity: 1; }
+}
+
+/* Unidades de Anúncio */
+.ad-unit {
+  background: linear-gradient(90deg, rgba(138, 43, 226, 0.1), rgba(255, 0, 92, 0.1));
+  border: 1px solid var(--color-secondary);
+  box-shadow: 0 0 10px rgba(138, 43, 226, 0.3);
+  padding: 15px;
+  margin: 15px 0;
+  color: var(--color-text);
+  font-weight: bold;
+  min-height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+}
+
+.input-area {
+  margin-bottom: 20px;
+  /* Sem padding extra aqui */
+}
+
+/* Campo de Input */
+input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
+  border: 2px solid var(--color-secondary);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  box-sizing: border-box;
+  border-radius: 5px;
+}
+
+input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+/* Botões */
+.buttons {
+  display: flex;
+  flex-direction: row; /* Desktop padrão: lado a lado */
+  gap: 15px; 
+  /* Sem padding extra aqui */
+}
+
+.buttons button {
+  flex-grow: 1;
+  width: auto; 
+  padding: 12px 18px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  background: var(--color-secondary);
+  color: var(--color-text);
+  font-weight: bold;
+  text-transform: uppercase;
+  box-shadow: 0 4px 10px rgba(138, 43, 226, 0.4);
+}
+
+.buttons button:hover:not(:disabled) {
+  background: var(--color-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(255, 0, 92, 0.6);
+}
+
+.buttons button:disabled {
+  background-color: #444;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Área de Resultado */
+.result-area {
+  text-align: left;
+  margin-top: 40px;
+  border-top: 2px dashed var(--color-secondary);
+  padding-top: 20px; 
+}
+
+.result-area h2 {
+  color: var(--color-primary);
+  text-align: center;
+}
+
+pre {
+  white-space: pre-wrap;
+  background-color: var(--color-bg);
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid var(--color-primary);
+  box-shadow: inset 0 0 8px rgba(255, 0, 92, 0.3);
+  font-size: 1em; 
+}
+
+/* Mensagens */
+.message {
+  padding: 10px;
+  margin-top: 15px;
+  border-radius: 5px;
+}
+
+.error {
+  background-color: rgba(255, 0, 92, 0.2);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+.loading {
+  background-color: rgba(138, 43, 226, 0.2);
+  color: var(--color-secondary);
+  border: 1px solid var(--color-secondary);
+}
+
+/* ------------------------------------------------ */
+/* MEDIA QUERY PARA CELULAR (Ajusta para telas menores) */
+/* ------------------------------------------------ */
+
+@media (max-width: 767px) {
+  
+  body {
+    align-items: flex-start;
+    padding: 0;
+  }
+  
+  .container {
+    /* 🎯 CORREÇÃO DE MOBILE: Ocupa 100% da largura para caber */
+    max-width: 100%;
+    width: 100%;
+    padding: 20px; /* Padding interno */
+    margin: 0; /* Remove margem lateral que causava overflow */
+    box-shadow: none;
+    border-radius: 0;
+    min-height: 100vh;
+  }
+  
+  h1 {
+    font-size: 2em;
+    padding-top: 0;
+  }
+  
+  /* Ajusta os botões para ficarem empilhados no celular */
+  .buttons {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .buttons button {
+    width: 100%;
+    flex-grow: 0;
+  }
+  
+  pre {
+    font-size: 0.9em;
+  }
+}
