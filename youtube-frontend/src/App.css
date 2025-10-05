@@ -22,29 +22,28 @@ body {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  /* Garante que o corpo não crie overflow horizontalmente */
   overflow-x: hidden; 
 }
 
 .container {
-  /* Estilo base (desktop) */
-  max-width: 1000px; /* Aumenta o limite máximo para telas grandes */
-  width: 90%; /* Ocupa 90% da largura no desktop */
-  padding: 40px; 
-  margin: 50px auto; /* Centraliza no desktop */
+  /* Estilo base (desktop/widget) */
+  max-width: 450px; /* Mais estreito para simular o widget */
+  width: 90%; 
+  padding: 25px; /* Reduzimos o padding */
+  margin: 40px auto; 
   background: var(--color-bg-dark);
   border-radius: 15px;
-  box-shadow: 0 0 40px rgba(138, 43, 226, 0.5);
+  box-shadow: 0 0 30px rgba(138, 43, 226, 0.4); /* Sombra mais sutil */
   text-align: center;
   transition: all 0.3s ease-in-out;
 }
 
 h1 {
   color: var(--color-primary);
-  text-shadow: 0 0 5px var(--color-secondary), 0 0 10px var(--color-secondary);
-  font-size: 3em; 
+  text-shadow: 0 0 4px var(--color-secondary), 0 0 8px var(--color-secondary);
+  font-size: 2em; /* Título mais compacto para o widget */
   margin-bottom: 20px;
-  padding-top: 20px;
+  padding-top: 5px; /* Ajuste fino */
 }
 
 h1 .brain {
@@ -58,64 +57,65 @@ h1 .brain {
   to { transform: scale(1.05); opacity: 1; }
 }
 
-/* Unidades de Anúncio */
 .ad-unit {
-  background: linear-gradient(90deg, rgba(138, 43, 226, 0.1), rgba(255, 0, 92, 0.1));
+  background: linear-gradient(90deg, rgba(138, 43, 226, 0.08), rgba(255, 0, 92, 0.08));
   border: 1px solid var(--color-secondary);
-  box-shadow: 0 0 10px rgba(138, 43, 226, 0.3);
-  padding: 15px;
+  box-shadow: 0 0 8px rgba(138, 43, 226, 0.2);
+  padding: 10px;
   margin: 15px 0;
   color: var(--color-text);
   font-weight: bold;
-  min-height: 70px;
+  min-height: 50px; /* Mais compacto */
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 5px;
+  font-size: 0.85em;
 }
 
 .input-area {
   margin-bottom: 20px;
-  /* Sem padding extra aqui */
 }
 
-/* Campo de Input */
-input {
+/* Textarea (Input Principal) */
+textarea {
   width: 100%;
-  padding: 12px;
+  padding: 15px;
   margin-bottom: 15px;
   border: 2px solid var(--color-secondary);
   background-color: var(--color-bg);
   color: var(--color-text);
   box-sizing: border-box;
   border-radius: 5px;
+  resize: vertical; /* Permite redimensionar verticalmente */
+  font-size: 1em;
+  min-height: 120px; /* Altura mínima consistente */
 }
 
-input:focus {
+textarea:focus {
   border-color: var(--color-primary);
   outline: none;
 }
 
-/* Botões */
 .buttons {
   display: flex;
-  flex-direction: row; /* Desktop padrão: lado a lado */
-  gap: 15px; 
-  /* Sem padding extra aqui */
+  flex-direction: column; /* Padrão Mobile/Widget: Empilhados */
+  gap: 10px; 
 }
 
 .buttons button {
-  flex-grow: 1;
-  width: auto; 
-  padding: 12px 18px;
+  width: 100%;
+  padding: 15px 18px; /* Padding maior para melhor toque */
   border: none;
-  border-radius: 5px;
+  border-radius: 8px; /* Bordas mais suaves */
   cursor: pointer;
   background: var(--color-secondary);
   color: var(--color-text);
   font-weight: bold;
   text-transform: uppercase;
   box-shadow: 0 4px 10px rgba(138, 43, 226, 0.4);
+  transition: all 0.2s ease-in-out;
+  font-size: 1em;
 }
 
 .buttons button:hover:not(:disabled) {
@@ -130,87 +130,74 @@ input:focus {
   box-shadow: none;
 }
 
-/* Área de Resultado */
 .result-area {
   text-align: left;
-  margin-top: 40px;
-  border-top: 2px dashed var(--color-secondary);
+  margin-top: 30px;
+  border-top: 1px dashed var(--color-secondary);
   padding-top: 20px; 
 }
 
 .result-area h2 {
   color: var(--color-primary);
   text-align: center;
+  font-size: 1.5em;
 }
 
 pre {
   white-space: pre-wrap;
+  word-wrap: break-word; /* Garante que o texto longo se ajuste */
   background-color: var(--color-bg);
   padding: 15px;
   border-radius: 8px;
   border: 1px solid var(--color-primary);
   box-shadow: inset 0 0 8px rgba(255, 0, 92, 0.3);
-  font-size: 1em; 
-}
-
-/* Mensagens */
-.message {
-  padding: 10px;
-  margin-top: 15px;
-  border-radius: 5px;
-}
-
-.error {
-  background-color: rgba(255, 0, 92, 0.2);
-  color: var(--color-primary);
-  border: 1px solid var(--color-primary);
-}
-
-.loading {
-  background-color: rgba(138, 43, 226, 0.2);
-  color: var(--color-secondary);
-  border: 1px solid var(--color-secondary);
+  font-size: 0.9em; 
+  max-height: 250px; /* Limita a altura do resultado para caber na tela */
+  overflow-y: auto; /* Adiciona scroll se necessário */
 }
 
 /* ------------------------------------------------ */
-/* MEDIA QUERY PARA CELULAR (Ajusta para telas menores) */
+/* MEDIA QUERY PARA MOBILE (Garante responsividade total) */
 /* ------------------------------------------------ */
 
-@media (max-width: 767px) {
-  
-  body {
-    align-items: flex-start;
-    padding: 0;
-  }
+@media (max-width: 480px) {
   
   .container {
-    /* 🎯 CORREÇÃO DE MOBILE: Ocupa 100% da largura para caber */
     max-width: 100%;
     width: 100%;
-    padding: 20px; /* Padding interno */
-    margin: 0; /* Remove margem lateral que causava overflow */
+    padding: 15px; 
+    margin: 0; 
     box-shadow: none;
     border-radius: 0;
     min-height: 100vh;
   }
   
   h1 {
-    font-size: 2em;
-    padding-top: 0;
+    font-size: 1.8em;
   }
   
-  /* Ajusta os botões para ficarem empilhados no celular */
-  .buttons {
-    flex-direction: column;
-    gap: 10px;
+  textarea, .buttons button {
+    font-size: 0.95em;
   }
-  
-  .buttons button {
-    width: 100%;
-    flex-grow: 0;
-  }
-  
-  pre {
-    font-size: 0.9em;
-  }
+}
+
+@media (min-width: 768px) {
+    .container {
+        /* Permite que o contêiner se expanda até 80% da largura da tela */
+        max-width: 80%; 
+        width: 800px; /* Define um limite máximo razoável para o conteúdo */
+        padding: 40px; /* Padding maior fica melhor em desktop */
+        margin: 50px auto; 
+    }
+
+    .buttons {
+        /* Para telas maiores, colocamos os botões lado a lado */
+        flex-direction: row;
+        gap: 15px;
+    }
+
+    .buttons button {
+        /* Faz os botões dividirem o espaço horizontalmente */
+        flex-grow: 1; 
+    }
 }

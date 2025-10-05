@@ -1,29 +1,25 @@
 import React, { useState } from 'react';
 import './App.css'; 
 
-// URL base do seu Spring Boot
 const API_BASE_URL = 'http://localhost:8080/api/videos';
 
 function App() {
-  // ⚠️ Voltamos a usar URL como entrada principal
-  const [url, setUrl] = useState(''); 
+  const [transcriptText, setTranscriptText] = useState(''); 
   const [result, setResult] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // Função genérica para chamar os endpoints do backend
+  
   const fetchContent = async (endpoint) => {
-    // Usamos o URL para fins de roteamento, mas o backend vai usar o mock
-    const effectiveUrl = url || 'teste-mock'; 
     
     if (endpoint === 'transcribe') {
-        // ⚠️ MANTEMOS A MENSAGEM DE ERRO/AVISO
-        setError('O serviço de transcrição direta foi desativado por instabilidade. Por favor, use os botões de IA.');
+        setError('A extração automática foi desativada. Cole o texto no campo e use a IA.');
         return;
     }
+    
+    const effectiveText = transcriptText; 
 
-    if (!effectiveUrl) {
-      setError('Por favor, insira uma URL do YouTube.');
+    if (!effectiveText) {
+      setError('Por favor, cole o texto da transcrição no campo para usar a IA.');
       return;
     }
 
@@ -32,10 +28,16 @@ function App() {
     setResult('');
 
     try {
-      // Usamos a chamada original GET, que irá para o mock no Java
-      const response = await fetch(`${API_BASE_URL}/${endpoint}?url=${encodeURIComponent(effectiveUrl)}`);
+      // Chamada POST (corpo da requisição) - Fluxo Tactiq
+      const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain', 
+        },
+        body: effectiveText, 
+      });
 
-      // 1. CHECAGEM INICIAL DE SUCESSO/FALHA (Status 200 OK)
+      // 1. CHECAGEM DE ERRO
       if (!response.ok) {
         let errorMsg = `Erro do Servidor (${response.status}).`;
 
@@ -44,10 +46,9 @@ function App() {
         if (response.status === 429) {
           errorMsg = "Limite de uso da IA (429 Too Many Requests) atingido. Tente novamente em alguns minutos.";
         } else {
-           // Tenta analisar o JSON para pegar a mensagem de erro detalhada do Spring Boot
           try {
             const errorJson = JSON.parse(errorBody);
-            errorMsg = errorJson.error || errorBody;
+            errorMsg = errorJson.message || errorBody;
           } catch (e) {
              errorMsg = errorBody || errorMsg;
           }
@@ -56,13 +57,12 @@ function App() {
         throw new Error(errorMsg);
       }
       
-      // 2. CHECAGEM DE SUCESSO (Status 200 OK)
+      // 2. CHECAGEM DE SUCESSO
       const data = await response.text();
       setResult(data);
 
     } catch (err) {
       setError(`Falha na Requisição: ${err.message || 'Verifique a conexão (backend Java 8080).'}`); 
-
     } finally {
       setLoading(false);
     }
@@ -70,31 +70,35 @@ function App() {
   
   return (
     <div className="container">
-      <h1>YouTube Text Converter <span className="brain">🧠</span></h1> 
       
-      {/* ⚠️ ESPAÇO PARA ANÚNCIOS (MONETIZAÇÃO) ⚠️ */}
+      {/* 💡 CABEÇALHO LIMPO E FOCO NO SERVIÇO */}
+      <h1>AI Converter <span className="brain">🧠</span></h1> 
+      
       <div className="ad-unit top-ad">Anúncio Aqui (Google AdSense)</div>
       
       <div className="input-area">
-        {/* 💡 INPUT DE URL */}
-        <input
-          type="text"
-          placeholder="Cole a URL do YouTube aqui (Ex: https://www.youtube.com/watch?v=...)"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
+        
+        {/* 💡 REMOVEMOS INFORMAÇÕES DE URL CONFUSAS */}
+        <textarea
+          rows="8"
+          placeholder="COLE A TRANSCRIÇÃO BRUTA AQUI (Obtida do vídeo, modelo Tactiq para IA)..."
+          value={transcriptText}
+          onChange={(e) => setTranscriptText(e.target.value)}
           disabled={loading}
         />
+        
         <div className="buttons">
-          {/* ⚠️ BOTÃO DE TRANSCREVER AGORA SÓ MOSTRA O AVISO */}
+          {/* BOTÃO DE INFORMAÇÃO */}
           <button onClick={() => fetchContent('transcribe')} disabled={loading}>
-            {loading ? 'Processando...' : '1. Transcrever (Desativado)'}
+            {loading ? 'Processando...' : '1. INFO: Como Obter o Texto?'}
           </button>
-          {/* BOTÕES DE IA AGORA USAM O URL (QUE CHAMA O MOCK) */}
+          
+          {/* BOTÕES DE IA */}
           <button onClick={() => fetchContent('summarize')} disabled={loading}>
-            {loading ? 'Resumindo...' : '2. Resumir (Tópicos IA)'}
+            {loading ? 'Resumindo...' : '2. RESUMIR (Tópicos IA)'}
           </button>
           <button onClick={() => fetchContent('enrich')} disabled={loading}>
-            {loading ? 'Incrementando...' : '3. Aprimorar (Artigo IA)'}
+            {loading ? 'Incrementando...' : '3. APRIMORAR (Artigo IA)'}
           </button>
         </div>
       </div>
@@ -107,13 +111,16 @@ function App() {
       {result && (
         <div className="result-area">
           <h2>Resultado:</h2>
-          {/* Usa <pre> para respeitar a formatação Markdown da IA */}
           <pre>{result}</pre>
         </div>
       )}
       
-      {/* ⚠️ ESPAÇO PARA ANÚNCIOS (MONETIZAÇÃO) ⚠️ */}
       <div className="ad-unit bottom-ad">Anúncio Aqui (Google AdSense)</div>
+      
+      {/* 💡 ESPAÇO PARA O FUTURO FOOTER DA EMPRESA */}
+      <footer style={{marginTop: '20px', fontSize: '0.75em', color: '#666'}}>
+          &copy; [Nome da Empresa] - Projeto de IA
+      </footer>
     </div>
   );
 }
