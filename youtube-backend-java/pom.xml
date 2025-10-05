@@ -49,6 +49,11 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webflux</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>io.github.thoroldvix</groupId>
+			<artifactId>youtube-transcript-api</artifactId>
+			<version>0.3.6</version>
+		</dependency>
 	</dependencies>
 
 	<build>

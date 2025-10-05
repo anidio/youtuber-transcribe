@@ -3,15 +3,18 @@ from flask_cors import CORS
 import re
 import traceback
 
-# ⚠️ Importação de compatibilidade: A versão 0.6.2 garante que este método funciona
-from youtube_transcript_api import YouTubeTranscriptApi 
+# NOVO IMPORT: ElementTree para o erro 404
+from xml.etree import ElementTree 
+# ⚠️ IMPORTAÇÃO FINAL: Importa o módulo inteiro para contornar o AttributeError
+import youtube_transcript_api
+# Importa as exceções originais (agora importadas da API)
 from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound, VideoUnavailable
 
 app = Flask(__name__)
 CORS(app) 
 
 def extract_video_id(url):
-    # Regex robusta (já corrigida no passo anterior)
+    # Regex robusta
     pattern = r"(?:v=|youtu\.be\/|embed\/|v\/|shorts\/)([0-9A-Za-z_-]{11})"
     match = re.search(pattern, url)
     return match.group(1) if match else None
@@ -30,10 +33,11 @@ def transcribe_video():
         return jsonify({"error": "URL do YouTube inválida ou ID do vídeo não encontrado."}), 400
 
     try:
-        # CHAMADA CORRETA: O método estático da classe principal
-        transcript_list = YouTubeTranscriptApi.get_transcript(
+        # CHAMADA CORRIGIDA: Usa o módulo como objeto para acessar o método
+        transcript_list = youtube_transcript_api.get_transcript( 
             video_id, 
-            languages=['pt', 'en']
+            languages=['pt', 'en'],
+            allow_automatic_transcripts=True
         )
         
         full_transcript = " ".join([item['text'] for item in transcript_list])
@@ -43,15 +47,17 @@ def transcribe_video():
             "transcript": full_transcript
         })
 
-    except (TranscriptsDisabled, NoTranscriptFound, VideoUnavailable) as e:
-        print(f"ERRO DE TRANSCRICAO: {str(e)}")
+    # BLOCO DE EXCEÇÃO ATUALIZADO (Trata 404 e erro de parseamento)
+    except (TranscriptsDisabled, NoTranscriptFound, VideoUnavailable, ElementTree.ParseError) as e:
+        print(f"ERRO DE TRANSCRICAO (404): {str(e)}")
+        # Retorna 404 para o Java
         return jsonify({
-            "error": "O vídeo não possui legendas disponíveis ou está indisponível para esta região/API.",
+            "error": "O vídeo não possui legendas disponíveis (apenas automáticas) ou está indisponível para esta região/API.",
             "details": str(e)
         }), 404 
     
     except Exception as e:
-        print(f"ERRO CRÍTICO NO PYTHON: {str(e)}")
+        print(f"ERRO CRÍTICO NO PYTHON (500): {str(e)}")
         traceback.print_exc()
         return jsonify({
             "error": "Erro interno desconhecido no serviço de transcrição Python.",
