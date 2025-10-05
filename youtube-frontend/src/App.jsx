@@ -9,95 +9,111 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
+  // 💡 MENSAGEM DO BOTÃO 1
+  const [button1Text, setButton1Text] = useState('1. Extrair Transcrição');
+
+  // Função para solicitar a transcrição do Content Script
+  const getTranscriptFromTab = () => {
+    return new Promise((resolve, reject) => {
+        // Envia uma mensagem para o Content Script na aba ativa
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs.length === 0 || !tabs[0].id) {
+                return reject(new Error("Nenhuma aba ativa encontrada. Navegue para um vídeo do YouTube."));
+            }
+
+            chrome.tabs.sendMessage(tabs[0].id, { action: 'GET_TRANSCRIPT' }, (response) => {
+                if (chrome.runtime.lastError) {
+                    // O erro de runtime geralmente ocorre se o Content Script falhou ao injetar (extensão nova, página não recarregada)
+                    return reject(new Error("Erro de comunicação com o Content Script. Recarregue a página do YouTube e tente novamente."));
+                }
+                
+                if (response && response.transcript) {
+                    resolve(response.transcript);
+                } else {
+                    reject(new Error("Transcrição não encontrada. O vídeo pode não ter legendas ou o formato do YouTube mudou."));
+                }
+            });
+        });
+    });
+  };
+
   const fetchContent = async (endpoint) => {
-    
-    if (endpoint === 'transcribe') {
-        setError('A extração automática foi desativada. Cole o texto no campo e use a IA.');
-        return;
-    }
-    
-    const effectiveText = transcriptText; 
-
-    if (!effectiveText) {
-      setError('Por favor, cole o texto da transcrição no campo para usar a IA.');
-      return;
-    }
-
     setLoading(true);
     setError('');
     setResult('');
-
+    
     try {
-      // Chamada POST (corpo da requisição) - Fluxo Tactiq
-      const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'text/plain', 
-        },
-        body: effectiveText, 
-      });
-
-      // 1. CHECAGEM DE ERRO
-      if (!response.ok) {
-        let errorMsg = `Erro do Servidor (${response.status}).`;
-
-        const errorBody = await response.text();
-        
-        if (response.status === 429) {
-          errorMsg = "Limite de uso da IA (429 Too Many Requests) atingido. Tente novamente em alguns minutos.";
-        } else {
-          try {
-            const errorJson = JSON.parse(errorBody);
-            errorMsg = errorJson.message || errorBody;
-          } catch (e) {
-             errorMsg = errorBody || errorMsg;
+      // 💡 PASSO 1: O Front-end OBTÉM O TEXTO DO NAVEGADOR
+      setButton1Text('Extraindo...');
+      const transcript = await getTranscriptFromTab();
+      setTranscriptText(transcript); // Exibe no textarea
+      
+      let finalResult;
+      
+      if (endpoint === 'transcribe') {
+          // Se for o botão 'Transcrever', apenas exibe o texto extraído
+          finalResult = transcript;
+          setButton1Text('1. Extração Sucedida');
+      } else {
+          // 💡 PASSO 2: Chama o endpoint de IA (POST) com o texto real
+          setButton1Text('Texto obtido, Processando IA...');
+          const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'text/plain', 
+            },
+            body: transcript, 
+          });
+          
+          if (!response.ok) {
+            let errorMsg = `Erro do Servidor (${response.status}).`;
+            const errorBody = await response.text();
+            throw new Error(errorBody || errorMsg);
           }
-        }
-
-        throw new Error(errorMsg);
+          
+          finalResult = await response.text();
+          setButton1Text('1. Extração Completa');
       }
       
-      // 2. CHECAGEM DE SUCESSO
-      const data = await response.text();
-      setResult(data);
+      setResult(finalResult);
 
     } catch (err) {
-      setError(`Falha na Requisição: ${err.message || 'Verifique a conexão (backend Java 8080).'}`); 
+      setError(`Falha: ${err.message || 'Verifique a conexão (backend Java 8080).'}`); 
+      setButton1Text('1. Falha na Extração');
     } finally {
       setLoading(false);
+      // Reverte o texto do botão principal para o estado original após um tempo
+      setTimeout(() => setButton1Text('1. Extrair Transcrição'), 3000);
     }
   };
   
   return (
     <div className="container">
       
-      {/* 💡 CABEÇALHO LIMPO E FOCO NO SERVIÇO */}
       <h1>AI Converter <span className="brain">🧠</span></h1> 
       
       <div className="ad-unit top-ad">Anúncio Aqui (Google AdSense)</div>
       
       <div className="input-area">
-        
-        {/* 💡 REMOVEMOS INFORMAÇÕES DE URL CONFUSAS */}
         <textarea
           rows="8"
-          placeholder="COLE A TRANSCRIÇÃO BRUTA AQUI (Obtida do vídeo, modelo Tactiq para IA)..."
+          placeholder="O texto da transcrição será extraído automaticamente aqui após clicar no botão 1."
           value={transcriptText}
           onChange={(e) => setTranscriptText(e.target.value)}
           disabled={loading}
         />
         
         <div className="buttons">
-          {/* BOTÃO DE INFORMAÇÃO */}
+          {/* 💡 BOTÃO PRINCIPAL: Inicia o processo de automação e extração */}
           <button onClick={() => fetchContent('transcribe')} disabled={loading}>
-            {loading ? 'Processando...' : '1. INFO: Como Obter o Texto?'}
+            {loading && button1Text === 'Extraindo...' ? 'Extraindo...' : button1Text}
           </button>
           
-          {/* BOTÕES DE IA */}
-          <button onClick={() => fetchContent('summarize')} disabled={loading}>
+          {/* BOTÕES DE IA: Agora chamam o fluxo que inicia a extração */}
+          <button onClick={() => fetchContent('summarize')} disabled={loading || transcriptText.length === 0}>
             {loading ? 'Resumindo...' : '2. RESUMIR (Tópicos IA)'}
           </button>
-          <button onClick={() => fetchContent('enrich')} disabled={loading}>
+          <button onClick={() => fetchContent('enrich')} disabled={loading || transcriptText.length === 0}>
             {loading ? 'Incrementando...' : '3. APRIMORAR (Artigo IA)'}
           </button>
         </div>
@@ -117,7 +133,6 @@ function App() {
       
       <div className="ad-unit bottom-ad">Anúncio Aqui (Google AdSense)</div>
       
-      {/* 💡 ESPAÇO PARA O FUTURO FOOTER DA EMPRESA */}
       <footer style={{marginTop: '20px', fontSize: '0.75em', color: '#666'}}>
           &copy; [Nome da Empresa] - Projeto de IA
       </footer>
