@@ -2,7 +2,8 @@ package com.conversor.controller;
 
 import com.conversor.dto.TranscriptResponse;
 import com.conversor.service.TranscriptionService;
-import com.conversor.service.OpenAIService; // ⚠️ Novo import
+// ⚠️ ATUALIZAÇÃO: Importa o GeminiService
+import com.conversor.service.GeminiService;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -11,12 +12,12 @@ import org.springframework.web.bind.annotation.*;
 public class TranscriptionController {
 
     private final TranscriptionService transcriptionService;
-    private final OpenAIService openAIService; // Novo serviço de IA
+    private final GeminiService geminiService; // ⚠️ NOVO SERVIÇO DE IA
 
-    // Construtor atualizado para injetar ambos os serviços
-    public TranscriptionController(TranscriptionService transcriptionService, OpenAIService openAIService) {
+    // Construtor atualizado para injetar GeminiService
+    public TranscriptionController(TranscriptionService transcriptionService, GeminiService geminiService) {
         this.transcriptionService = transcriptionService;
-        this.openAIService = openAIService;
+        this.geminiService = geminiService;
     }
 
     // Endpoint 1: Transcrição Bruta
@@ -29,24 +30,22 @@ public class TranscriptionController {
     }
 
     // Endpoint 2: Resumir o Vídeo
-    // Ex: GET http://localhost:8080/api/videos/summarize?url=...
     @GetMapping("/summarize")
     public String summarize(@RequestParam String url) {
-        // 1. Obtém a transcrição (funcionalidade 1)
+        // 1. Obtém a transcrição (MOCK ATIVO)
         String transcript = transcriptionService.getTranscription(url).getTranscript();
 
-        // 2. Chama a IA para resumir (funcionalidade 2)
-        return openAIService.summarize(transcript);
+        // 2. Chama a IA do Gemini para resumir
+        return geminiService.summarize(transcript);
     }
 
     // Endpoint 3: Incrementar Conteúdo
-    // Ex: GET http://localhost:8080/api/videos/enrich?url=...
     @GetMapping("/enrich")
     public String enrich(@RequestParam String url) {
-        // 1. Obtém a transcrição (funcionalidade 1)
+        // 1. Obtém a transcrição (MOCK ATIVO)
         String transcript = transcriptionService.getTranscription(url).getTranscript();
 
-        // 2. Chama a IA para enriquecer (funcionalidade 3)
-        return openAIService.enrich(transcript);
+        // 2. Chama a IA do Gemini para enriquecer
+        return geminiService.enrich(transcript);
     }
 }
