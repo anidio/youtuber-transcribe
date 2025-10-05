@@ -1,33 +1,34 @@
 // Arquivo: youtube-frontend/src/content.js
 
-// 💡 Esta função tenta extrair o texto de transcrição atualmente visível no DOM do YouTube.
-// A estrutura do DOM pode mudar, mas este é o ponto principal a ser inspecionado.
+// 💡 Esta função tenta extrair o texto da transcrição atualmente visível no DOM do YouTube.
 function getTranscriptText() {
-    // Tenta encontrar a div principal que contém a transcrição (classe específica do YouTube)
-    const transcriptContainer = document.querySelector('div.ytd-transcript-renderer');
+    // Tenta encontrar o contêiner principal da transcrição, que geralmente tem o atributo 'id' ou uma classe estável.
+    const transcriptPanel = document.getElementById('panels-container'); 
     
-    if (transcriptContainer) {
-        // Seleciona todos os segmentos de texto
-        const segments = transcriptContainer.querySelectorAll('.segment-text'); 
+    if (transcriptPanel) {
+        // Tenta encontrar todos os elementos que contêm os segmentos de texto de forma mais genérica.
+        // O texto geralmente está dentro de uma <div role="listitem"> ou similar.
+        const segmentContainers = transcriptPanel.querySelectorAll('div[role="listitem"]'); 
         
         let fullTranscript = '';
 
-        segments.forEach(segment => {
-            // Adiciona o texto de cada segmento com um espaço
-            fullTranscript += segment.textContent + ' ';
-        });
+        if (segmentContainers.length > 0) {
+             // Itera sobre os contêineres e extrai o texto formatado.
+            segmentContainers.forEach(container => {
+                // Tenta encontrar o texto dentro de yt-formatted-string ou similar
+                const textElement = container.querySelector('yt-formatted-string, span'); 
+                if (textElement) {
+                    fullTranscript += textElement.textContent + ' ';
+                }
+            });
+        }
 
         if (fullTranscript.trim().length > 0) {
             return fullTranscript.trim();
         }
     }
     
-    // Fallback: Tenta encontrar o texto da descrição (menos ideal)
-    const descriptionElement = document.querySelector('#description yt-formatted-string.ytd-text-inline-details-renderer');
-    if (descriptionElement) {
-        return descriptionElement.textContent;
-    }
-
+    // Se não for encontrado na lateral, retorna a URL (aqui você colocaria um fallback com uma API de scraping paga)
     return null; 
 }
 
@@ -36,8 +37,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'GET_TRANSCRIPT') {
         const transcript = getTranscriptText();
         
-        // Envia o texto da transcrição de volta para o Pop-up
         sendResponse({ transcript: transcript });
-        return true; // Indica que a resposta será enviada assincronamente
+        return true; 
     }
 });

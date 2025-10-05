@@ -1,49 +1,60 @@
 package com.conversor.controller;
 
 import com.conversor.dto.TranscriptResponse;
-import com.conversor.service.TranscriptionService;
 import com.conversor.service.GeminiService;
+import com.conversor.service.WhisperService; // Usaremos o serviço de áudio
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/videos")
-// Mantenha o CORS para a porta do frontend
 @CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5174", "http://localhost:5173"})
 public class TranscriptionController {
 
-    // Mantemos a injeção, mas só Gemini será usado diretamente
-    private final TranscriptionService transcriptionService;
+    // Mantemos os serviços de IA e adicionamos o serviço de transcrição de áudio
+    private final WhisperService whisperService;
     private final GeminiService geminiService;
 
-    public TranscriptionController(TranscriptionService transcriptionService, GeminiService geminiService) {
-        this.transcriptionService = transcriptionService;
+    public TranscriptionController(WhisperService whisperService, GeminiService geminiService) {
+        this.whisperService = whisperService;
         this.geminiService = geminiService;
     }
 
-    // ⚠️ O Endpoint /transcribe é mantido, mas não será usado pelo novo frontend.
+    // Endpoint 1: Transcrição Bruta (Agora real via Whisper)
     @GetMapping("/transcribe")
     public TranscriptResponse transcribe(@RequestParam String url) {
-        // Devolve o mock para testar a conexão, mas o frontend será instruído a não usá-lo.
-        return transcriptionService.getTranscription(url);
+        if (url == null || url.trim().isEmpty()) {
+            throw new IllegalArgumentException("A URL do YouTube é obrigatória.");
+        }
+        // 1. Obtém a transcrição via download/Whisper
+        String transcript = whisperService.transcribeAudio(url);
+
+        TranscriptResponse response = new TranscriptResponse();
+        response.setVideoId("WHISPER_ID");
+        response.setTranscript(transcript);
+        return response;
     }
 
-    // 💡 FLUXO TACTIQ: Recebe o texto BRUTO no corpo da requisição (POST)
-    @PostMapping("/summarize")
-    public String summarize(@RequestBody String transcript) {
+    // Endpoint 2: Resumir (Fluxo URL -> Whisper -> Gemini)
+    @GetMapping("/summarize")
+    public String summarize(@RequestParam String url) {
+        // 1. Obtém a transcrição via download/Whisper
+        String transcript = whisperService.transcribeAudio(url);
         if (transcript == null || transcript.trim().isEmpty()) {
-            throw new IllegalArgumentException("O texto da transcrição é obrigatório. Cole a transcrição no campo de texto.");
+            return "Falha na Transcrição. O áudio pode estar indisponível ou o Whisper falhou.";
         }
-        // Chama a IA do Gemini diretamente
+        // 2. Chama a IA do Gemini
         return geminiService.summarize(transcript);
     }
 
-    // 💡 FLUXO TACTIQ: Recebe o texto BRUTO no corpo da requisição (POST)
-    @PostMapping("/enrich")
-    public String enrich(@RequestBody String transcript) {
+    // Endpoint 3: Incrementar Conteúdo (Fluxo URL -> Whisper -> Gemini)
+    @GetMapping("/enrich")
+    public String enrich(@RequestParam String url) {
+        // 1. Obtém a transcrição via download/Whisper
+        String transcript = whisperService.transcribeAudio(url);
         if (transcript == null || transcript.trim().isEmpty()) {
-            throw new IllegalArgumentException("O texto da transcrição é obrigatório. Cole a transcrição no campo de texto.");
+            return "Falha na Transcrição. O áudio pode estar indisponível ou o Whisper falhou.";
         }
-        // Chama a IA do Gemini diretamente
+        // 2. Chama a IA do Gemini
         return geminiService.enrich(transcript);
     }
 }

@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class TranscriptResponse {
+    private String videoId;
     private String transcript;
     private String summary;
     private String topics;
