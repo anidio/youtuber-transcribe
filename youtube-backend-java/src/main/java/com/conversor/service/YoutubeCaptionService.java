@@ -1,74 +1,91 @@
 package com.conversor.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
-import org.springframework.util.FileCopyUtils;
+import com.google.gson.Gson;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+/**
+ * Serviço Híbrido: Executa um script Python externo para extrair a transcrição real do YouTube,
+ * contornando o bloqueio de requisições diretas do YouTube em Java.
+ */
 @Service
 public class YoutubeCaptionService {
 
-    private final ResourceLoader resourceLoader;
+    private final Gson gson = new Gson();
 
-    @Autowired
-    public YoutubeCaptionService(ResourceLoader resourceLoader) {
-        this.resourceLoader = resourceLoader;
+    private String extractVideoId(String youtubeUrl) {
+        Pattern pattern = Pattern.compile("(?:v=|youtu\\.be\\/|embed\\/|v\\/|shorts\\/)([0-9A-Za-z_-]{11})");
+        Matcher matcher = pattern.matcher(youtubeUrl);
+        return matcher.find() ? matcher.group(1) : null;
     }
 
-    // Método utilitário para extrair o script do JAR para um arquivo temporário no disco
-    private File extractScript(String scriptName) throws Exception {
-        // Acessa o script dentro da pasta 'resources' do classpath
-        Resource resource = resourceLoader.getResource("classpath:scripts/" + scriptName);
-
-        // Cria um arquivo temporário no sistema de arquivos
-        File tempFile = Files.createTempFile(scriptName.replace(".py", ""), ".py").toFile();
-        tempFile.deleteOnExit(); // Garante que o arquivo será deletado ao sair do sistema
-
-        // Copia o conteúdo do JAR para o arquivo temporário
-        try (InputStream is = resource.getInputStream();
-             FileOutputStream fos = new FileOutputStream(tempFile)) {
-            FileCopyUtils.copy(is, fos);
-        }
-        return tempFile;
-    }
-
+    /**
+     * Executa o script Python e retorna a transcrição.
+     */
     public String getCaptions(String youtubeUrl) {
-        File scriptFile = null;
+        String videoId = extractVideoId(youtubeUrl);
+        if (videoId == null) {
+            throw new RuntimeException("URL do YouTube inválida.");
+        }
+
+        String scriptName = "youtube_script.py";
+
+        System.out.println("⏳ PYTHON HYBRID: Iniciando execução do Python para o ID: " + videoId);
+
         try {
-            // 1. Extrair o script para um local acessível no disco
-            scriptFile = extractScript("get_youtube_captions.py");
+            // 💡 CORREÇÃO: Usamos o diretório de trabalho atual (./), onde o Spring está rodando.
+            // Isso resolve o erro 'CreateProcess error=267'.
+            File workingDirectory = new File("./");
 
-            // 2. Usar o caminho absoluto do arquivo temporário na ProcessBuilder
-            ProcessBuilder pb = new ProcessBuilder("python", scriptFile.getAbsolutePath(), youtubeUrl);            Process process = pb.start();
+            // O nome do interpretador 'python' e o nome do arquivo 'youtube_script.py'
+            ProcessBuilder pb = new ProcessBuilder("python", scriptName, videoId);
 
-            // Espera a execução por um tempo razoável
-            process.waitFor(10, TimeUnit.SECONDS);
+            // Define o diretório de trabalho (o diretório atual)
+            pb.directory(workingDirectory);
+            Process process = pb.start();
 
-            // Captura a saída do Python
-            String output = new String(process.getInputStream().readAllBytes()).trim();
-
-            if (process.exitValue() != 0 || output.isEmpty()) {
-                String errorOutput = new String(process.getErrorStream().readAllBytes());
-                System.err.println("Python Script Error (get_youtube_captions.py): " + errorOutput);
-                return null;
+            // Lê a saída padrão do script Python (stdout)
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            StringBuilder builder = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                builder.append(line).append("\n");
             }
+
+            // Espera o processo terminar
+            int exitCode = process.waitFor();
+            String output = builder.toString().trim();
+
+            if (exitCode != 0) {
+                // Se o Python retornar um erro (exitCode != 0), lê o JSON de erro
+                try {
+                    Map<String, String> errorMap = gson.fromJson(output, Map.class);
+                    if (errorMap != null && errorMap.containsKey("error")) {
+                        throw new RuntimeException("Falha de Transcrição Python: " + errorMap.get("error"));
+                    }
+                } catch (Exception jsonEx) {
+                    // Se não for JSON, retorna o erro bruto do console
+                    throw new RuntimeException("Erro desconhecido na execução Python. Saída: " + output);
+                }
+            }
+
+            if (output.isEmpty()) {
+                throw new RuntimeException("Script Python não retornou transcrição.");
+            }
+
+            System.out.println("✅ PYTHON HYBRID: Transcrição obtida com sucesso.");
             return output;
 
         } catch (Exception e) {
-            System.err.println("Falha ao tentar executar get_youtube_captions.py: " + e.getMessage());
-            return null;
-        } finally {
-            // 3. Limpar o arquivo temporário
-            if (scriptFile != null) {
-                scriptFile.delete();
-            }
+            System.err.println("❌ Erro ao executar o Python via Java: " + e.getMessage());
+            // Lançamos uma exceção para o Controller retornar um 404/400
+            throw new RuntimeException("Falha na Transcrição: " + e.getMessage());
         }
     }
 }

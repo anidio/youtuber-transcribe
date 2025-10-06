@@ -1,81 +1,77 @@
 package com.conversor.controller;
 
-import com.conversor.dto.TranscriptResponse;
 import com.conversor.service.GeminiService;
-import com.conversor.service.WhisperService;
-import com.conversor.service.YoutubeCaptionService; // Importar o novo serviço
+import com.conversor.service.OpenAIService;
+import com.conversor.dto.TranscriptRequest; // Necessário criar esta DTO
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @RestController
 @RequestMapping("/api/videos")
 @CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5174", "http://localhost:5173"})
 public class TranscriptionController {
 
-    private final WhisperService whisperService;
     private final GeminiService geminiService;
-    private final YoutubeCaptionService youtubeCaptionService; // 💡 NOVO: Serviço de legendas
+    private final OpenAIService openAIService;
 
-    // 💡 CONSTRUTOR ATUALIZADO para injetar o novo serviço
-    public TranscriptionController(WhisperService whisperService, GeminiService geminiService, YoutubeCaptionService youtubeCaptionService) {
-        this.whisperService = whisperService;
+    // O YoutubeCaptionService não é mais necessário para este fluxo, mas será mantido vazio por enquanto.
+
+    // CONSTRUTOR: Removido YoutubeCaptionService (temporariamente)
+    public TranscriptionController(GeminiService geminiService, OpenAIService openAIService) {
         this.geminiService = geminiService;
-        this.youtubeCaptionService = youtubeCaptionService;
+        this.openAIService = openAIService;
     }
 
-    // 💡 NOVA LÓGICA: Tenta Legenda (rápido) -> Tenta Whisper (lento)
-    private String getRobustTranscript(String url) {
-        // 1. Tenta obter a transcrição via legenda (mais rápido e mais preciso)
-        System.out.println("⏳ INICIANDO CAPTION: Tentando legenda para: " + url);
-        String transcript = youtubeCaptionService.getCaptions(url);
+    // Endpoint 1: RESUMO / GERAÇÃO DE TÓPICOS (Reuso do endpoint 'summarize' com POST)
+    @PostMapping("/summarize")
+    public String summarize(@RequestBody TranscriptRequest request) {
+        String inputContent = request.getTranscript();
 
-        if (transcript == null || transcript.trim().isEmpty()) {
-            // 2. Se falhar, tenta transcrição de áudio (Whisper)
-            System.out.println("⚠️ LEGENDAS FALHARAM. INICIANDO WHISPER (Lento): " + url);
-            transcript = whisperService.transcribeAudio(url);
+        if (inputContent == null || inputContent.trim().isEmpty()) {
+            throw new IllegalArgumentException("O conteúdo de entrada é obrigatório.");
         }
-        return transcript;
+
+        System.out.println("✅ CONTEÚDO RECEBIDO. Tentando GEMINI (Resumo/Roteiro)...");
+
+        try {
+            // 1. Tenta Gemini (Prioridade)
+            return geminiService.summarize(inputContent);
+
+        } catch (WebClientResponseException e) {
+            System.err.println("⚠️ GEMINI FALHOU (" + e.getStatusCode() + "). Tentando OpenAI (Resumo) como fallback...");
+            // 2. Tenta OpenAI (Fallback)
+            return openAIService.summarize(inputContent);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Falha ao processar o resumo/roteiro com ambas as IAs: " + e.getMessage());
+        }
     }
 
-    // Endpoint 1: Transcrição Bruta
-    @GetMapping("/transcribe")
-    public TranscriptResponse transcribe(@RequestParam String url) {
-        if (url == null || url.trim().isEmpty()) {
-            throw new IllegalArgumentException("A URL do YouTube é obrigatória.");
+    // Endpoint 2: APRIMORAMENTO / GERAÇÃO DE ARTIGO SEO (Reuso do endpoint 'enrich' com POST)
+    @PostMapping("/enrich")
+    public String enrich(@RequestBody TranscriptRequest request) {
+        String inputContent = request.getTranscript();
+
+        if (inputContent == null || inputContent.trim().isEmpty()) {
+            throw new IllegalArgumentException("O conteúdo de entrada é obrigatório.");
         }
 
-        String transcript = getRobustTranscript(url); // Usa a lógica de fallback
+        System.out.println("✅ CONTEÚDO RECEBIDO. Tentando GEMINI (Artigo Otimizado)...");
 
-        if (transcript == null || transcript.trim().isEmpty()) {
-            throw new RuntimeException("Falha na Transcrição. O vídeo não tem legendas e o Whisper falhou.");
+        try {
+            // 1. Tenta Gemini (Prioridade)
+            return geminiService.enrich(inputContent);
+
+        } catch (WebClientResponseException e) {
+            System.err.println("⚠️ GEMINI FALHOU (" + e.getStatusCode() + "). Tentando OpenAI (Artigo Otimizado) como fallback...");
+            // 2. Tenta OpenAI (Fallback)
+            return openAIService.enrich(inputContent);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Falha ao processar o artigo com ambas as IAs: " + e.getMessage());
         }
-
-        TranscriptResponse response = new TranscriptResponse();
-        response.setVideoId("FALLBACK_ID"); // ID genérico, pois não extraímos de forma limpa aqui
-        response.setTranscript(transcript);
-        return response;
     }
 
-    // Endpoint 2: Resumir (Fluxo URL -> Legenda/Whisper -> Gemini)
-    @GetMapping("/summarize")
-    public String summarize(@RequestParam String url) {
-        String transcript = getRobustTranscript(url);
-
-        if (transcript == null || transcript.trim().isEmpty()) {
-            return "Falha na Transcrição. O áudio pode estar indisponível ou o Whisper falhou.";
-        }
-        // 2. Chama a IA do Gemini
-        return geminiService.summarize(transcript);
-    }
-
-    // Endpoint 3: Incrementar Conteúdo (Fluxo URL -> Legenda/Whisper -> Gemini)
-    @GetMapping("/enrich")
-    public String enrich(@RequestParam String url) {
-        String transcript = getRobustTranscript(url);
-
-        if (transcript == null || transcript.trim().isEmpty()) {
-            return "Falha na Transcrição. O áudio pode estar indisponível ou o Whisper falhou.";
-        }
-        // 2. Chama a IA do Gemini
-        return geminiService.enrich(transcript);
-    }
+    // Removed /transcribe GET endpoint and related logic.
 }

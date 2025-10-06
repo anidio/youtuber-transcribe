@@ -26,6 +26,7 @@ public class GeminiService {
      * Método genérico para enviar prompts ao Gemini e receber a resposta textual.
      */
     private String getAiResponse(String prompt) {
+        // Cria a estrutura da requisição JSON exigida pelo Gemini
         Map<String, Object> contentPart = Map.of("text", prompt);
         Map<String, Object> contents = Map.of(
                 "contents", Collections.singletonList(
@@ -34,6 +35,7 @@ public class GeminiService {
         );
 
         try {
+            // Faz a requisição POST para a API do Gemini
             Map<String, Object> responseMap = webClient.post()
                     .uri(GEMINI_API_URL + apiKey)
                     .bodyValue(contents)
@@ -41,6 +43,7 @@ public class GeminiService {
                     .bodyToMono(Map.class)
                     .block();
 
+            // Extrai o texto da resposta (navega na estrutura JSON)
             if (responseMap != null && responseMap.containsKey("candidates")) {
                 var candidates = (java.util.List<Map<String, Object>>) responseMap.get("candidates");
                 if (!candidates.isEmpty()) {
@@ -53,77 +56,25 @@ public class GeminiService {
 
         } catch (Exception e) {
             System.err.println("❌ Erro na comunicação com a API Gemini: " + e.getMessage());
-            return "Erro ao gerar resposta: " + e.getMessage();
+            throw new RuntimeException("Falha ao se comunicar com a API Gemini.", e);
         }
     }
 
-    // ------------------------------------------------------------------------
-    // FUNÇÕES PÚBLICAS USADAS PELO TranscriptionService
-    // ------------------------------------------------------------------------
-
-    /**
-     * Gera um resumo estruturado do vídeo.
-     */
-    public String generateSummary(String transcript) {
-        String prompt = """
-            Você é um assistente especialista em resumos de vídeos do YouTube.
-            Crie um resumo objetivo e bem formatado em até 5 parágrafos, explicando os principais pontos do vídeo abaixo:
-            
-            Texto:
-            """ + transcript;
+    // --- FUNCIONALIDADE 1: GERAÇÃO DE ROTEIRO/ESBOÇO (Endpoint: summarize) ---
+    public String summarize(String inputContent) {
+        String prompt = String.format(
+                "Você é um Editor de Conteúdo Sênior. Gere um ROTEIRO COMPLETO (Esboço) para um artigo de blog otimizado para SEO baseado no texto de entrada. O roteiro deve ter de 5 a 7 tópicos, cada um sendo um subtítulo forte e atraente (H2) pronto para uso em um blog. Não use introduções como 'O esboço é'. Use apenas o formato Markdown de lista numerada. O texto base é: '%s'",
+                inputContent
+        );
         return getAiResponse(prompt);
     }
 
-    /**
-     * Extrai os principais tópicos do conteúdo transcrito.
-     */
-    public String extractTopics(String transcript) {
-        String prompt = """
-            Extraia e liste os principais tópicos e ideias centrais do texto abaixo.
-            Retorne em formato Markdown, com marcadores ("-") e no máximo 10 tópicos curtos e claros.
-
-            Texto:
-            """ + transcript;
-        return getAiResponse(prompt);
-    }
-
-    /**
-     * Melhora e reescreve a descrição do vídeo de forma mais atrativa.
-     */
-    public String enhanceDescription(String transcript) {
-        String prompt = """
-            Crie uma nova descrição otimizada e envolvente para o YouTube com base no texto a seguir.
-            Use linguagem natural, amigável e que desperte curiosidade. Limite a 2 parágrafos curtos.
-
-            Texto:
-            """ + transcript;
-        return getAiResponse(prompt);
-    }
-
-    // ------------------------------------------------------------------------
-    // MÉTODOS ALTERNATIVOS (mantidos para compatibilidade, se já usados)
-    // ------------------------------------------------------------------------
-
-    /** Resumo mais direto em tópicos */
-    public String summarize(String transcript) {
-        String prompt = """
-            Resuma o seguinte texto, que é uma transcrição de vídeo, em 5 a 7 tópicos curtos e claros para estudos.
-            Use formatação Markdown com marcadores. NÃO inclua introduções como 'Este é um resumo do vídeo'.
-            Texto:
-            """ + transcript;
-        return getAiResponse(prompt);
-    }
-
-    /** Enriquecimento do texto */
-    public String enrich(String transcript) {
-        String prompt = """
-            O texto abaixo é uma transcrição de vídeo. Reescreva-o de forma coesa e profissional,
-            corrigindo erros de fala e expandindo o conteúdo com informações complementares relevantes.
-            Mantenha o tema, mas enriqueça o texto final para que pareça um artigo de blog.
-            Limite o texto final a cerca de 500 palavras.
-
-            Texto:
-            """ + transcript;
+    // --- FUNCIONALIDADE 2: ARTIGO OTIMIZADO DE 500 PALAVRAS (Endpoint: enrich) ---
+    public String enrich(String inputContent) {
+        String prompt = String.format(
+                "Você é um Copywriter e Especialista em SEO. Sua tarefa é transformar o texto de entrada em um artigo de blog completo, original e otimizado para rankear no Google, ideal para listagens de e-commerce ou reviews de afiliados. O artigo deve ter aproximadamente 500 palavras, usar subtítulos em Markdown (##) e um tom persuasivo. O texto base é: '%s'",
+                inputContent
+        );
         return getAiResponse(prompt);
     }
 }
