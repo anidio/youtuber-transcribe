@@ -2,7 +2,8 @@ package com.conversor.controller;
 
 import com.conversor.dto.TranscriptResponse;
 import com.conversor.service.GeminiService;
-import com.conversor.service.WhisperService; // Usaremos o serviço de áudio
+import com.conversor.service.WhisperService;
+import com.conversor.service.YoutubeCaptionService; // Importar o novo serviço
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -10,35 +11,55 @@ import org.springframework.web.bind.annotation.*;
 @CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5174", "http://localhost:5173"})
 public class TranscriptionController {
 
-    // Mantemos os serviços de IA e adicionamos o serviço de transcrição de áudio
     private final WhisperService whisperService;
     private final GeminiService geminiService;
+    private final YoutubeCaptionService youtubeCaptionService; // 💡 NOVO: Serviço de legendas
 
-    public TranscriptionController(WhisperService whisperService, GeminiService geminiService) {
+    // 💡 CONSTRUTOR ATUALIZADO para injetar o novo serviço
+    public TranscriptionController(WhisperService whisperService, GeminiService geminiService, YoutubeCaptionService youtubeCaptionService) {
         this.whisperService = whisperService;
         this.geminiService = geminiService;
+        this.youtubeCaptionService = youtubeCaptionService;
     }
 
-    // Endpoint 1: Transcrição Bruta (Agora real via Whisper)
+    // 💡 NOVA LÓGICA: Tenta Legenda (rápido) -> Tenta Whisper (lento)
+    private String getRobustTranscript(String url) {
+        // 1. Tenta obter a transcrição via legenda (mais rápido e mais preciso)
+        System.out.println("⏳ INICIANDO CAPTION: Tentando legenda para: " + url);
+        String transcript = youtubeCaptionService.getCaptions(url);
+
+        if (transcript == null || transcript.trim().isEmpty()) {
+            // 2. Se falhar, tenta transcrição de áudio (Whisper)
+            System.out.println("⚠️ LEGENDAS FALHARAM. INICIANDO WHISPER (Lento): " + url);
+            transcript = whisperService.transcribeAudio(url);
+        }
+        return transcript;
+    }
+
+    // Endpoint 1: Transcrição Bruta
     @GetMapping("/transcribe")
     public TranscriptResponse transcribe(@RequestParam String url) {
         if (url == null || url.trim().isEmpty()) {
             throw new IllegalArgumentException("A URL do YouTube é obrigatória.");
         }
-        // 1. Obtém a transcrição via download/Whisper
-        String transcript = whisperService.transcribeAudio(url);
+
+        String transcript = getRobustTranscript(url); // Usa a lógica de fallback
+
+        if (transcript == null || transcript.trim().isEmpty()) {
+            throw new RuntimeException("Falha na Transcrição. O vídeo não tem legendas e o Whisper falhou.");
+        }
 
         TranscriptResponse response = new TranscriptResponse();
-        response.setVideoId("WHISPER_ID");
+        response.setVideoId("FALLBACK_ID"); // ID genérico, pois não extraímos de forma limpa aqui
         response.setTranscript(transcript);
         return response;
     }
 
-    // Endpoint 2: Resumir (Fluxo URL -> Whisper -> Gemini)
+    // Endpoint 2: Resumir (Fluxo URL -> Legenda/Whisper -> Gemini)
     @GetMapping("/summarize")
     public String summarize(@RequestParam String url) {
-        // 1. Obtém a transcrição via download/Whisper
-        String transcript = whisperService.transcribeAudio(url);
+        String transcript = getRobustTranscript(url);
+
         if (transcript == null || transcript.trim().isEmpty()) {
             return "Falha na Transcrição. O áudio pode estar indisponível ou o Whisper falhou.";
         }
@@ -46,11 +67,11 @@ public class TranscriptionController {
         return geminiService.summarize(transcript);
     }
 
-    // Endpoint 3: Incrementar Conteúdo (Fluxo URL -> Whisper -> Gemini)
+    // Endpoint 3: Incrementar Conteúdo (Fluxo URL -> Legenda/Whisper -> Gemini)
     @GetMapping("/enrich")
     public String enrich(@RequestParam String url) {
-        // 1. Obtém a transcrição via download/Whisper
-        String transcript = whisperService.transcribeAudio(url);
+        String transcript = getRobustTranscript(url);
+
         if (transcript == null || transcript.trim().isEmpty()) {
             return "Falha na Transcrição. O áudio pode estar indisponível ou o Whisper falhou.";
         }
