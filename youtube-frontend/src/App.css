@@ -2,78 +2,73 @@
   box-sizing: border-box;
 }
 
-/* Variáveis de cores Ciberpunk */
 :root {
-  --color-primary: #ff005c; /* Pink Neon */
-  --color-secondary: #8a2be2; /* Blue-Violet (Roxo) */
-  --color-text: #e0ffff; /* Ciano claro */
-  --color-bg-dark: #0f0f18; /* Cor de Fundo do BODY, WRAPPER e FOOTER */
-  --color-bg-light: #1a1a2e; /* Cor do CARD e Contraste (era --color-bg) */
-  --color-link: #00bcd4; /* Ciano para links secundários */
+  --color-primary: #ff005c;
+  --color-secondary: #8a2be2;
+  --color-text: #e0ffff;
+  --color-bg-dark: #0f0f18;
+  --color-bg-light: #1a1a2e;
+  --color-link: #00bcd4;
 }
 
-/* Base Global e Full-Screen */
-html, body {
-  height: 100%; 
-  min-height: 100vh;
+/* ============================= */
+/* BASE GLOBAL E FUNDO TOTAL */
+/* ============================= */
+
+html, body, #root {
+  height: 100%;
   width: 100%;
-}
-
-body {
-  /* Fundo principal da página (Cor mais escura para eliminar quebras) */
-  background: var(--color-bg-dark); 
-  color: var(--color-text);
   margin: 0;
   padding: 0;
+  background: var(--color-bg-dark);
+  color: var(--color-text);
   font-family: 'Arial', sans-serif;
-  
-  /* Layout Flexbox Principal (Sticky Footer) */
-  display: flex; 
-  flex-direction: column; 
-  justify-content: space-between; 
-  align-items: center; 
-  overflow-x: hidden; 
 }
 
-/* Wrapper para o conteúdo do Card (Ocupa 100% da largura e cresce) */
-.app-wrapper {
-  width: 100%;
-  flex-grow: 1; 
+/* CONTAINER GERAL */
+.container {
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  
-  /* Garante que o fundo do wrapper seja a cor dark (que já é o body) */
-  background: var(--color-bg-dark); 
-  padding: 40px 0 0 0; 
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100vh; /* cobre toda a tela */
+  width: 100%;
+  background: var(--color-bg-dark);
 }
 
-/* O CARTÃO DE CONTEÚDO (Elemento central e limitado) */
+/* CONTEÚDO CENTRAL */
+.app-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column; /* Itens empilhados */
+  justify-content: flex-start;
+  align-items: center;
+  background: var(--color-bg-dark);
+  width: 100%;
+  padding: 40px 0 0 0;
+}
+
+/* CARD PRINCIPAL */
 .content-card {
-    /* Cor de contraste para o CARD, destacando-o do background */
-    background: var(--color-bg-light); 
-    max-width: 800px; 
-    width: 95%; 
-    padding: 25px; 
-    /* Apenas margem superior para espaçar do topo da tela/navegador */
-    margin: 0 auto; 
-    border-radius: 15px;
-    box-shadow: 0 0 30px rgba(138, 43, 226, 0.4);
-    text-align: center;
-    transition: all 0.3s ease-in-out;
+  background: var(--color-bg-light);
+  max-width: 800px;
+  width: 95%;
+  padding: 25px;
+  margin: 0 auto;
+  border-radius: 15px;
+  box-shadow: 0 0 30px rgba(138, 43, 226, 0.4);
+  text-align: center;
+  transition: all 0.3s ease-in-out;
 }
 
 h1 {
   color: var(--color-primary);
   text-shadow: 0 0 4px var(--color-secondary), 0 0 8px var(--color-secondary);
-  font-size: 2em; 
+  font-size: 2em;
   margin-bottom: 20px;
-  padding-top: 5px; 
+  padding-top: 5px;
 }
 
 h1 .brain {
-  font-size: 1em;
-  display: inline-block;
   animation: pulse 1.5s infinite alternate;
 }
 
@@ -82,67 +77,36 @@ h1 .brain {
   to { transform: scale(1.05); opacity: 1; }
 }
 
-/* Elementos de Input */
-.input-area {
-  margin-bottom: 20px;
-}
-
-textarea {
+/* INPUTS */
+textarea, .dynamic-input, .dynamic-select {
   width: 100%;
   padding: 15px;
   margin-bottom: 15px;
   border: 2px solid var(--color-secondary);
-  background-color: var(--color-bg-dark); /* Mudado para a cor mais escura para contraste interno */
+  background-color: var(--color-bg-dark);
   color: var(--color-text);
-  box-sizing: border-box;
   border-radius: 5px;
-  resize: vertical; 
+  resize: vertical;
   font-size: 1em;
-  min-height: 120px; 
 }
 
-textarea:focus {
+textarea:focus, .dynamic-input:focus, .dynamic-select:focus {
   border-color: var(--color-primary);
   outline: none;
 }
 
-/* Controles Dinâmicos (Select + Input Number) */
-.controls-group {
-    display: flex;
-    flex-direction: column; 
-    gap: 15px;
-    margin-bottom: 15px;
-}
-
-.dynamic-input, .dynamic-select {
-    padding: 10px;
-    font-size: 1em;
-    background-color: var(--color-bg-dark); 
-    color: var(--color-text);
-    border: 2px solid var(--color-secondary);
-    border-radius: 5px;
-    transition: border-color 0.25s;
-    box-sizing: border-box;
-    width: 100%;
-}
-
-.dynamic-input:focus, .dynamic-select:focus {
-    border-color: var(--color-primary);
-    outline: none;
-}
-
-/* Botões */
+/* BOTÕES */
 .buttons {
   display: flex;
-  flex-direction: column; 
-  gap: 10px; 
+  flex-direction: column;
+  gap: 10px;
 }
 
 .buttons button {
   width: 100%;
-  padding: 15px 18px; 
+  padding: 15px 18px;
   border: none;
-  border-radius: 8px; 
+  border-radius: 8px;
   cursor: pointer;
   background: var(--color-secondary);
   color: var(--color-text);
@@ -159,13 +123,7 @@ textarea:focus {
   box-shadow: 0 6px 15px rgba(255, 0, 92, 0.6);
 }
 
-.buttons button:disabled {
-  background-color: #444;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-/* Área de Mensagens e Resultados e Anúncios */
+/* ANÚNCIOS */
 .ad-unit {
   background: linear-gradient(90deg, rgba(138, 43, 226, 0.08), rgba(255, 0, 92, 0.08));
   border: 1px solid var(--color-secondary);
@@ -174,130 +132,88 @@ textarea:focus {
   margin: 15px 0;
   color: var(--color-text);
   font-weight: bold;
-  min-height: 50px; 
-  display: flex;
-  align-items: center;
-  justify-content: center;
   border-radius: 5px;
   font-size: 0.85em;
 }
 
-.message.error {
-    color: var(--color-primary);
-    border: 1px solid var(--color-primary);
-    padding: 10px;
-    margin-top: 15px;
-    border-radius: 5px;
-}
+/* ============================= */
+/* FOOTER */
+/* ============================= */
 
-.message.loading {
-    color: var(--color-text); 
-    margin-top: 15px;
-}
-
-.result-area {
-  text-align: left;
-  margin-top: 30px;
-  border-top: 1px dashed var(--color-secondary);
-  padding-top: 20px; 
-}
-
-.result-area h2 {
-  color: var(--color-primary);
-  text-align: center;
-  font-size: 1.5em;
-}
-
-pre {
-  white-space: pre-wrap;
-  word-wrap: break-word; 
-  background-color: var(--color-bg-dark); /* Usando o fundo mais escuro para destaque */
-  padding: 15px;
-  border-radius: 8px;
-  border: 1px solid var(--color-primary);
-  box-shadow: inset 0 0 8px rgba(255, 0, 92, 0.3);
-  font-size: 0.9em; 
-  max-height: 250px; 
-  overflow-y: auto; 
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-.spinner {
-    animation: spin 1s linear infinite;
-}
-
-/* ------------------------------------------------ */
-/* FOOTER INSTITUCIONAL (MangueBit Code) */
-/* ------------------------------------------------ */
 .institutional-footer {
-    width: 100%;
-    /* Fundo escuro igual ao body e wrapper para FLUIDEZ TOTAL */
-    background: var(--color-bg-dark); 
-    color: var(--color-text);
-    padding: 30px 20px;
-    font-size: 0.9em;
-    /* Linha neon de separação */
-    border-top: 3px solid var(--color-secondary); 
-    text-align: center;
-    margin-top: 0; 
+  width: 100%;
+  background: var(--color-bg-dark);
+  color: var(--color-text);
+  padding: 30px 20px;
+  border-top: 3px solid var(--color-secondary);
+  text-align: center;
+  margin-top: auto;
 }
 
 .institutional-footer p {
-    margin: 5px 0;
+  margin: 5px 0;
 }
 
 .institutional-footer a {
-    color: var(--color-link); 
-    font-weight: bold;
-    text-decoration: none;
-    transition: color 0.2s;
+  color: var(--color-link);
+  font-weight: bold;
+  text-decoration: none;
+  transition: color 0.2s;
 }
 
 .institutional-footer a:hover {
-    color: var(--color-primary); 
+  color: var(--color-primary);
 }
 
 .instagram-link {
-    display: inline-flex;
-    align-items: center;
-    margin: 15px 0;
-    padding: 8px 15px;
-    border: 2px solid var(--color-primary);
-    border-radius: 20px;
-    text-transform: uppercase;
-    font-size: 1em;
-    text-shadow: 0 0 5px var(--color-primary);
-    box-shadow: 0 0 10px var(--color-primary);
-    background: rgba(255, 0, 92, 0.1);
+  display: inline-flex;
+  align-items: center;
+  margin: 15px 0;
+  padding: 8px 15px;
+  border: 2px solid var(--color-primary);
+  border-radius: 20px;
+  text-transform: uppercase;
+  font-size: 1em;
+  text-shadow: 0 0 5px var(--color-primary);
+  box-shadow: 0 0 10px var(--color-primary);
+  background: rgba(255, 0, 92, 0.1);
 }
 
-/* ------------------------------------------------ */
-/* MEDIA QUERIES (RESPONSIVIDADE) */
-/* ------------------------------------------------ */
+/* ============================= */
+/* RESPONSIVIDADE */
+/* ============================= */
 
-/* Em telas pequenas (Mobile) */
 @media (max-width: 639px) {
-    .content-card {
-        margin: 0 auto;
-        width: 100%;
-        padding: 15px;
-        box-shadow: none;
-        border-radius: 0; 
-    }
-    
-    /* Remove o padding superior em mobile para usar toda a tela */
-    .app-wrapper {
-        padding-top: 0; 
-    }
+  .content-card {
+    margin: 0 auto;
+    width: 100%;
+    padding: 15px;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .app-wrapper {
+    padding-top: 0;
+  }
 }
 
-/* Em telas médias/grandes, os controles ficam lado a lado */
 @media (min-width: 640px) {
-    .controls-group { flex-direction: row; }
-    .buttons { flex-direction: row; gap: 15px; }
-    .buttons button { flex-grow: 1; }
-    .controls-group .dynamic-input { width: 150px; flex: 0 0 auto; }
-    .institutional-footer { padding: 40px; }
+  .buttons {
+    flex-direction: row;
+    gap: 15px;
+  }
+
+  .buttons button {
+    flex-grow: 1;
+  }
+
+  .institutional-footer {
+    padding: 40px;
+  }
+}
+
+.highlight-company {
+  color: #8a2be2; /* roxo padrão neon */
+  font-weight: 700;
+  text-shadow: 0 0 6px rgba(138, 43, 226, 0.6);
 }
