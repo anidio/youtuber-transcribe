@@ -22,6 +22,44 @@ public class GeminiService {
         this.webClient = webClientBuilder.build();
     }
 
+    // Lógica para definir o estilo e a tarefa da IA com base na plataforma selecionada
+    private String getStylePrompt(String platform) {
+        switch (platform) {
+            case "INSTAGRAM_CURTO":
+                // NOVO PROMPT: Foco em título cativante, destaques e CTA de venda.
+                return "Crie uma descrição de produto/serviço com um título cativante usando 1 a 2 emojis no início e fim. Liste 3 a 5 Destaques/Benefícios usando o emoji ✅ ou ✨. Inclua um Call to Action (CTA) forte com informações de preço/localização. Use um tom empolgante, muitas quebras de linha e emojis. Mantenha a saída com foco na venda.";
+            case "TIKTOK_CASUAL":
+                // NOVO PROMPT: Foco em linguagem da internet, fatos rápidos e hashtags de tendência.
+                return "Crie uma legenda super casual e envolvente, usando linguagem da internet (ex: 'rolê', 'trend'). Liste 3 fatos rápidos sobre o produto e finalize com 3 a 5 hashtags que viralizam (ex: #unboxing #dicas). Use emojis de forma exagerada e respeite o limite de caracteres para legendas de vídeo.";
+            case "ECOM_DIRETO":
+                return "Crie uma descrição de produto/serviço com foco em clareza, listas de bullet points de benefícios e venda direta, sem emojis.";
+            case "ROTEIRO_TOPICOS":
+                return "Crie um ROTEIRO em tópicos numerados (Markdown #) de 5 a 7 itens para um artigo ou vídeo. Não inclua introduções.";
+            case "SEO_LONGO":
+            default:
+                return "Crie um artigo de blog completo, original e otimizado para SEO, utilizando subtítulos em Markdown (##) e um tom persuasivo.";
+        }
+    }
+
+    /**
+     * MÉTODO UNIFICADO: Gera conteúdo dinâmico com base na plataforma e limite.
+     */
+    public String generateContent(String input, String platform, int limit) {
+        String stylePrompt = getStylePrompt(platform);
+
+        // Define se o limite é em caracteres ou palavras
+        String limitType = platform.endsWith("_CURTO") || platform.endsWith("ECOM_DIRETO") ? "caracteres" : "palavras";
+
+        String prompt = String.format(
+                "Você é um Copywriter/Especialista em SEO. Baseado no conteúdo abaixo, %s O limite MÁXIMO de saída deve ser de %d %s. O conteúdo base é: '%s'",
+                stylePrompt,
+                limit,
+                limitType,
+                input
+        );
+        return getAiResponse(prompt);
+    }
+
     /**
      * Método genérico para enviar prompts ao Gemini e receber a resposta textual.
      */
@@ -58,23 +96,5 @@ public class GeminiService {
             System.err.println("❌ Erro na comunicação com a API Gemini: " + e.getMessage());
             throw new RuntimeException("Falha ao se comunicar com a API Gemini.", e);
         }
-    }
-
-    // --- FUNCIONALIDADE 1: GERAÇÃO DE ROTEIRO/ESBOÇO (Endpoint: summarize) ---
-    public String summarize(String inputContent) {
-        String prompt = String.format(
-                "Você é um Editor de Conteúdo Sênior. Gere um ROTEIRO COMPLETO (Esboço) para um artigo de blog otimizado para SEO baseado no texto de entrada. O roteiro deve ter de 5 a 7 tópicos, cada um sendo um subtítulo forte e atraente (H2) pronto para uso em um blog. Não use introduções como 'O esboço é'. Use apenas o formato Markdown de lista numerada. O texto base é: '%s'",
-                inputContent
-        );
-        return getAiResponse(prompt);
-    }
-
-    // --- FUNCIONALIDADE 2: ARTIGO OTIMIZADO DE 500 PALAVRAS (Endpoint: enrich) ---
-    public String enrich(String inputContent) {
-        String prompt = String.format(
-                "Você é um Copywriter e Especialista em SEO. Sua tarefa é transformar o texto de entrada em um artigo de blog completo, original e otimizado para rankear no Google, ideal para listagens de e-commerce ou reviews de afiliados. O artigo deve ter aproximadamente 500 palavras, usar subtítulos em Markdown (##) e um tom persuasivo. O texto base é: '%s'",
-                inputContent
-        );
-        return getAiResponse(prompt);
     }
 }

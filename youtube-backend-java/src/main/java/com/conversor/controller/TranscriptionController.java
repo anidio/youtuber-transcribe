@@ -2,8 +2,7 @@ package com.conversor.controller;
 
 import com.conversor.service.GeminiService;
 import com.conversor.service.OpenAIService;
-import com.conversor.dto.TranscriptRequest; // Necessário criar esta DTO
-import org.springframework.http.HttpStatus;
+import com.conversor.dto.TranscriptRequest;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
@@ -15,63 +14,39 @@ public class TranscriptionController {
     private final GeminiService geminiService;
     private final OpenAIService openAIService;
 
-    // O YoutubeCaptionService não é mais necessário para este fluxo, mas será mantido vazio por enquanto.
-
-    // CONSTRUTOR: Removido YoutubeCaptionService (temporariamente)
+    // CONSTRUTOR: Removido o YoutubeCaptionService obsoleto
     public TranscriptionController(GeminiService geminiService, OpenAIService openAIService) {
         this.geminiService = geminiService;
         this.openAIService = openAIService;
     }
 
-    // Endpoint 1: RESUMO / GERAÇÃO DE TÓPICOS (Reuso do endpoint 'summarize' com POST)
-    @PostMapping("/summarize")
-    public String summarize(@RequestBody TranscriptRequest request) {
+    // NOVO ENDPOINT UNIFICADO para geração de conteúdo
+    @PostMapping("/generate-description")
+    public String generateDescription(@RequestBody TranscriptRequest request) {
         String inputContent = request.getTranscript();
+        String platform = request.getPlatform();
+        int limit = request.getCharacterLimit();
 
         if (inputContent == null || inputContent.trim().isEmpty()) {
-            throw new IllegalArgumentException("O conteúdo de entrada é obrigatório.");
+            throw new IllegalArgumentException("O conteúdo de entrada (transcript) é obrigatório.");
+        }
+        if (platform == null || platform.isEmpty() || limit <= 0) {
+            throw new IllegalArgumentException("A plataforma e o limite são obrigatórios e devem ser válidos.");
         }
 
-        System.out.println("✅ CONTEÚDO RECEBIDO. Tentando GEMINI (Resumo/Roteiro)...");
+        System.out.printf("✅ CONTEÚDO RECEBIDO. Tentando GEMINI (Plataforma: %s, Limite: %d)...\n", platform, limit);
 
         try {
             // 1. Tenta Gemini (Prioridade)
-            return geminiService.summarize(inputContent);
+            return geminiService.generateContent(inputContent, platform, limit);
 
         } catch (WebClientResponseException e) {
-            System.err.println("⚠️ GEMINI FALHOU (" + e.getStatusCode() + "). Tentando OpenAI (Resumo) como fallback...");
+            System.err.printf("⚠️ GEMINI FALHOU (%s). Tentando OpenAI como fallback...\n", e.getStatusCode());
             // 2. Tenta OpenAI (Fallback)
-            return openAIService.summarize(inputContent);
+            return openAIService.generateContent(inputContent, platform, limit);
 
         } catch (Exception e) {
-            throw new RuntimeException("Falha ao processar o resumo/roteiro com ambas as IAs: " + e.getMessage());
+            throw new RuntimeException("Falha ao processar a descrição com ambas as IAs: " + e.getMessage());
         }
     }
-
-    // Endpoint 2: APRIMORAMENTO / GERAÇÃO DE ARTIGO SEO (Reuso do endpoint 'enrich' com POST)
-    @PostMapping("/enrich")
-    public String enrich(@RequestBody TranscriptRequest request) {
-        String inputContent = request.getTranscript();
-
-        if (inputContent == null || inputContent.trim().isEmpty()) {
-            throw new IllegalArgumentException("O conteúdo de entrada é obrigatório.");
-        }
-
-        System.out.println("✅ CONTEÚDO RECEBIDO. Tentando GEMINI (Artigo Otimizado)...");
-
-        try {
-            // 1. Tenta Gemini (Prioridade)
-            return geminiService.enrich(inputContent);
-
-        } catch (WebClientResponseException e) {
-            System.err.println("⚠️ GEMINI FALHOU (" + e.getStatusCode() + "). Tentando OpenAI (Artigo Otimizado) como fallback...");
-            // 2. Tenta OpenAI (Fallback)
-            return openAIService.enrich(inputContent);
-
-        } catch (Exception e) {
-            throw new RuntimeException("Falha ao processar o artigo com ambas as IAs: " + e.getMessage());
-        }
-    }
-
-    // Removed /transcribe GET endpoint and related logic.
 }

@@ -9,5 +9,7 @@ import lombok.AllArgsConstructor;
 @NoArgsConstructor
 public class TranscriptRequest {
     private String transcript;
-    private String url; // Mantido para compatibilidade, mas apenas 'transcript' é usado.
+    private String url;
+    private String platform;
+    private int characterLimit;
 }
